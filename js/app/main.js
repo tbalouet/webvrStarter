@@ -21,7 +21,7 @@ window.THREE = require("../lib/vendor/three.js");
 	// Add a repeating grid as a skybox.
 	var boxWidth = 5;
 	var loader   = new THREE.TextureLoader();
-	loader.load('/assets/box.png', onTextureLoaded);
+	loader.load('assets/box.png', onTextureLoaded);
 	function onTextureLoaded(texture) {
 		texture.wrapS = THREE.RepeatWrapping;
 		texture.wrapT = THREE.RepeatWrapping;

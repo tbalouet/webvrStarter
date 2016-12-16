@@ -2,6 +2,8 @@
 
 A starter guide to have a working project in WebVR.
 
+Demo: https://tbalouet.github.io/webvrStarter/
+
 To get started run
 ```
   npm install
