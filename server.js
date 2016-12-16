@@ -8,10 +8,10 @@ if(conf.error){
 	return;
 }
 
-app.use(express.static(__dirname + '/public', {maxAge : conf.maxAge}));
+app.use('/public/', express.static(__dirname + '/public', {maxAge : conf.maxAge}));
 
 app.get('/', function(req, res){
-  	res.render('webvrstarter_index.ejs', {mainFile : "main" + conf.mainFile});
+  	res.render('webvrstarter_index.ejs', {mainFile : "/public/main" + conf.mainFile});
 });
 
 app.listen(conf.port);
