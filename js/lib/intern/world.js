@@ -56,7 +56,7 @@ var World;
 		effect.setSize(opts.width, opts.height);
 		
 		// Create a VR manager helper to enter and exit VR mode.
-		var manager       = new WebVRManager(renderer, effect, {hideButton : true});
+		var manager       = new WebVRManager(renderer, effect);
 		
 		var stats;
 		if(GLOBAL.env === "dev"){
