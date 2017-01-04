@@ -5,8 +5,19 @@ window.THREE = require("../lib/vendor/three.js");
 
 	var World = require("../lib/intern/world.js");
 	var THREE = require("../lib/vendor/three.js");
+	var Glob  = require("./globals.js");
 
 	GLOBAL.env = (location.href.indexOf("3000") !== -1 || location.href.indexOf("debug=true") !== -1 ? "dev" : "prod");
+
+	if(Glob.isSamsung()){
+		document.getElementById("carmel-button").addEventListener("click", function(){
+			var ocurl = location.href;
+			ocurl = "ovrweb:" + ocurl.replace("http://", "").replace("https://", "");
+			
+			window.location.href = ocurl;
+		});
+		document.getElementById("carmel-button").style.display = "block";
+	}
 
 	var world            = new World({
 		color : 0x999999,

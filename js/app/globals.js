@@ -42,6 +42,10 @@ var Glob = {};
     s4() + '-' + s4() + s4() + s4();
   }
 
+  Glob.isSamsung = function(){
+    return /SAMSUNG|SM-/.test(navigator.userAgent);
+  };
+
   /*
    * Debug parameters.
    */

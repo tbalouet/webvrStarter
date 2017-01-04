@@ -53,6 +53,9 @@ var World;
 		
 		// Apply VR stereo rendering to renderer.
 		var effect        = new THREE.VREffect(renderer);
+		navigator.getVRDisplays().then(function(displays) {
+			effect.requestPresent();
+		});
 		effect.setSize(opts.width, opts.height);
 		
 		// Create a VR manager helper to enter and exit VR mode.
