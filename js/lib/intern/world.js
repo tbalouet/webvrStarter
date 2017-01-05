@@ -53,13 +53,24 @@ var World;
 		
 		// Apply VR stereo rendering to renderer.
 		var effect        = new THREE.VREffect(renderer);
-		navigator.getVRDisplays().then(function(displays) {
-			effect.requestPresent();
-		});
 		effect.setSize(opts.width, opts.height);
 		
 		// Create a VR manager helper to enter and exit VR mode.
 		var manager       = new WebVRManager(renderer, effect);
+
+		if ( navigator.getVRDisplays ) {
+			navigator.getVRDisplays()
+				.then( function ( displays ) {
+					effect.setVRDisplay( displays[ 0 ] );
+					if(controls){
+						controls.setVRDisplay( displays[ 0 ] );
+					}
+					effect.requestPresent();
+				} )
+				.catch( function () {
+					// no displays
+				} );
+		}
 		
 		var stats;
 		if(GLOBAL.env === "dev"){
@@ -153,8 +164,7 @@ var World;
 			this.getStats().end();
 		}
 
-		var display = (GLOBAL.world.getControls() && GLOBAL.world.getControls().getVRDisplay() ? GLOBAL.world.getControls().getVRDisplay() : window);
-		display.requestAnimationFrame(this.animate.bind(this));
+		this.getEffect().requestAnimationFrame(this.animate.bind(this));
 	};
 })();
 module.exports = World;

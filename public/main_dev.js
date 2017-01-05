@@ -210,13 +210,24 @@ var World;
 		
 		// Apply VR stereo rendering to renderer.
 		var effect        = new THREE.VREffect(renderer);
-		navigator.getVRDisplays().then(function(displays) {
-			effect.requestPresent();
-		});
 		effect.setSize(opts.width, opts.height);
 		
 		// Create a VR manager helper to enter and exit VR mode.
 		var manager       = new WebVRManager(renderer, effect);
+
+		if ( navigator.getVRDisplays ) {
+			navigator.getVRDisplays()
+				.then( function ( displays ) {
+					effect.setVRDisplay( displays[ 0 ] );
+					if(controls){
+						controls.setVRDisplay( displays[ 0 ] );
+					}
+					effect.requestPresent();
+				} )
+				.catch( function () {
+					// no displays
+				} );
+		}
 		
 		var stats;
 		if(GLOBAL.env === "dev"){
@@ -310,8 +321,7 @@ var World;
 			this.getStats().end();
 		}
 
-		var display = (GLOBAL.world.getControls() && GLOBAL.world.getControls().getVRDisplay() ? GLOBAL.world.getControls().getVRDisplay() : window);
-		display.requestAnimationFrame(this.animate.bind(this));
+		this.getEffect().requestAnimationFrame(this.animate.bind(this));
 	};
 })();
 module.exports = World;
@@ -320,6 +330,7 @@ module.exports = World;
  * @author dmarcos / https://github.com/dmarcos
  * @author mrdoob / http://mrdoob.com
  */
+
 var THREE = require('./three');
 
 module.exports = function ( object, onError ) {
@@ -331,8 +342,11 @@ module.exports = function ( object, onError ) {
 	var standingMatrix = new THREE.Matrix4();
 
 	var frameData = null;
+
 	if ( 'VRFrameData' in window ) {
+
 		frameData = new VRFrameData();
+
 	}
 
 	function gotVRDisplays( displays ) {
@@ -353,7 +367,11 @@ module.exports = function ( object, onError ) {
 
 	if ( navigator.getVRDisplays ) {
 
-		navigator.getVRDisplays().then( gotVRDisplays );
+		navigator.getVRDisplays().then( gotVRDisplays ).catch ( function () {
+
+			console.warn( 'THREE.VRControls: Unable to get VR Displays' );
+
+		} );
 
 	}
 
@@ -377,8 +395,15 @@ module.exports = function ( object, onError ) {
 
 	};
 
+	this.setVRDisplay = function ( value ) {
+
+		vrDisplay = value;
+
+	};
+
 	this.getVRDisplays = function () {
 
+		console.warn( 'THREE.VRControls: getVRDisplays() is being deprecated.' );
 		return vrDisplays;
 
 	};
@@ -487,22 +512,21 @@ module.exports = function ( object, onError ) {
  * Chromium: https://webvr.info/get-chrome
  *
  */
+
 var THREE = require('./three');
 
-module.exports = function ( renderer, onError ) {
+module.exports = function( renderer, onError ) {
 
 	var vrDisplay, vrDisplays;
 	var eyeTranslationL = new THREE.Vector3();
 	var eyeTranslationR = new THREE.Vector3();
 	var renderRectL, renderRectR;
-	var headMatrix = new THREE.Matrix4();
-	var headToEyeMatrixL = new THREE.Matrix4();
-	var headToEyeMatrixR = new THREE.Matrix4();
 
 	var frameData = null;
+
 	if ( 'VRFrameData' in window ) {
 
-		frameData = new VRFrameData();
+		frameData = new window.VRFrameData();
 
 	}
 
@@ -524,7 +548,11 @@ module.exports = function ( renderer, onError ) {
 
 	if ( navigator.getVRDisplays ) {
 
-		navigator.getVRDisplays().then( gotVRDisplays );
+		navigator.getVRDisplays().then( gotVRDisplays ).catch( function() {
+
+			console.warn( 'THREE.VREffect: Unable to get VR Displays' );
+
+		} );
 
 	}
 
@@ -539,19 +567,26 @@ module.exports = function ( renderer, onError ) {
 	var rendererUpdateStyle = false;
 	var rendererPixelRatio = renderer.getPixelRatio();
 
-	this.getVRDisplay = function () {
+	this.getVRDisplay = function() {
 
 		return vrDisplay;
 
 	};
 
-	this.getVRDisplays = function () {
+	this.setVRDisplay = function( value ) {
 
+		vrDisplay = value;
+
+	};
+
+	this.getVRDisplays = function() {
+
+		console.warn( 'THREE.VREffect: getVRDisplays() is being deprecated.' );
 		return vrDisplays;
 
 	};
 
-	this.setSize = function ( width, height, updateStyle ) {
+	this.setSize = function( width, height, updateStyle ) {
 
 		rendererSize = { width: width, height: height };
 		rendererUpdateStyle = updateStyle;
@@ -571,16 +606,13 @@ module.exports = function ( renderer, onError ) {
 
 	};
 
-	// fullscreen
+	// VR presentation
 
 	var canvas = renderer.domElement;
-	var requestFullscreen;
-	var exitFullscreen;
-	var fullscreenElement;
-	var leftBounds = [ 0.0, 0.0, 0.5, 1.0 ];
-	var rightBounds = [ 0.5, 0.0, 0.5, 1.0 ];
+	var defaultLeftBounds = [ 0.0, 0.0, 0.5, 1.0 ];
+	var defaultRightBounds = [ 0.5, 0.0, 0.5, 1.0 ];
 
-	function onFullscreenChange() {
+	function onVRDisplayPresentChange() {
 
 		var wasPresenting = scope.isPresenting;
 		scope.isPresenting = vrDisplay !== undefined && vrDisplay.isPresenting;
@@ -591,15 +623,7 @@ module.exports = function ( renderer, onError ) {
 			var eyeWidth = eyeParamsL.renderWidth;
 			var eyeHeight = eyeParamsL.renderHeight;
 
-			var layers = vrDisplay.getLayers();
-			if ( layers.length ) {
-
-				leftBounds = layers[0].leftBounds || [ 0.0, 0.0, 0.5, 1.0 ];
-				rightBounds = layers[0].rightBounds || [ 0.5, 0.0, 0.5, 1.0 ];
-
-			}
-
-			if ( !wasPresenting ) {
+			if ( ! wasPresenting ) {
 
 				rendererPixelRatio = renderer.getPixelRatio();
 				rendererSize = renderer.getSize();
@@ -618,11 +642,11 @@ module.exports = function ( renderer, onError ) {
 
 	}
 
-	window.addEventListener( 'vrdisplaypresentchange', onFullscreenChange, false );
+	window.addEventListener( 'vrdisplaypresentchange', onVRDisplayPresentChange, false );
 
-	this.setFullScreen = function ( boolean ) {
+	this.setFullScreen = function( boolean ) {
 
-		return new Promise( function ( resolve, reject ) {
+		return new Promise( function( resolve, reject ) {
 
 			if ( vrDisplay === undefined ) {
 
@@ -652,19 +676,19 @@ module.exports = function ( renderer, onError ) {
 
 	};
 
-	this.requestPresent = function () {
+	this.requestPresent = function() {
 
 		return this.setFullScreen( true );
 
 	};
 
-	this.exitPresent = function () {
+	this.exitPresent = function() {
 
 		return this.setFullScreen( false );
 
 	};
 
-	this.requestAnimationFrame = function ( f ) {
+	this.requestAnimationFrame = function( f ) {
 
 		if ( vrDisplay !== undefined ) {
 
@@ -678,7 +702,7 @@ module.exports = function ( renderer, onError ) {
 
 	};
 
-	this.cancelAnimationFrame = function ( h ) {
+	this.cancelAnimationFrame = function( h ) {
 
 		if ( vrDisplay !== undefined ) {
 
@@ -692,7 +716,7 @@ module.exports = function ( renderer, onError ) {
 
 	};
 
-	this.submitFrame = function () {
+	this.submitFrame = function() {
 
 		if ( vrDisplay !== undefined && scope.isPresenting ) {
 
@@ -712,7 +736,7 @@ module.exports = function ( renderer, onError ) {
 	var cameraR = new THREE.PerspectiveCamera();
 	cameraR.layers.enable( 2 );
 
-	this.render = function ( scene, camera, renderTarget, forceClear ) {
+	this.render = function( scene, camera, renderTarget, forceClear ) {
 
 		if ( vrDisplay && scope.isPresenting ) {
 
@@ -741,17 +765,35 @@ module.exports = function ( renderer, onError ) {
 			// When rendering we don't care what the recommended size is, only what the actual size
 			// of the backbuffer is.
 			var size = renderer.getSize();
+			var layers = vrDisplay.getLayers();
+			var leftBounds;
+			var rightBounds;
+
+			if ( layers.length ) {
+
+				var layer = layers[ 0 ];
+
+				leftBounds = layer.leftBounds !== null && layer.leftBounds.length === 4 ? layer.leftBounds : defaultLeftBounds;
+				rightBounds = layer.rightBounds !== null && layer.rightBounds.length === 4 ? layer.rightBounds : defaultRightBounds;
+
+			} else {
+
+				leftBounds = defaultLeftBounds;
+				rightBounds = defaultRightBounds;
+
+			}
+
 			renderRectL = {
 				x: Math.round( size.width * leftBounds[ 0 ] ),
 				y: Math.round( size.height * leftBounds[ 1 ] ),
 				width: Math.round( size.width * leftBounds[ 2 ] ),
-				height:  Math.round(size.height * leftBounds[ 3 ] )
+				height: Math.round( size.height * leftBounds[ 3 ] )
 			};
 			renderRectR = {
 				x: Math.round( size.width * rightBounds[ 0 ] ),
 				y: Math.round( size.height * rightBounds[ 1 ] ),
 				width: Math.round( size.width * rightBounds[ 2 ] ),
-				height:  Math.round(size.height * rightBounds[ 3 ] )
+				height: Math.round( size.height * rightBounds[ 3 ] )
 			};
 
 			if ( renderTarget ) {
@@ -759,8 +801,9 @@ module.exports = function ( renderer, onError ) {
 				renderer.setRenderTarget( renderTarget );
 				renderTarget.scissorTest = true;
 
-			} else  {
+			} else {
 
+				renderer.setRenderTarget( null );
 				renderer.setScissorTest( true );
 
 			}
@@ -772,6 +815,10 @@ module.exports = function ( renderer, onError ) {
 			camera.matrixWorld.decompose( cameraL.position, cameraL.quaternion, cameraL.scale );
 			camera.matrixWorld.decompose( cameraR.position, cameraR.quaternion, cameraR.scale );
 
+			var scale = this.scale;
+			cameraL.translateOnAxis( eyeTranslationL, scale );
+			cameraR.translateOnAxis( eyeTranslationR, scale );
+
 			if ( vrDisplay.getFrameData ) {
 
 				vrDisplay.depthNear = camera.near;
@@ -782,22 +829,10 @@ module.exports = function ( renderer, onError ) {
 				cameraL.projectionMatrix.elements = frameData.leftProjectionMatrix;
 				cameraR.projectionMatrix.elements = frameData.rightProjectionMatrix;
 
-				getHeadToEyeMatrices( frameData );
-
-				cameraL.updateMatrix();
-				cameraL.applyMatrix( headToEyeMatrixL );
-
-				cameraR.updateMatrix();
-				cameraR.applyMatrix( headToEyeMatrixR );
-
 			} else {
 
 				cameraL.projectionMatrix = fovToProjection( eyeParamsL.fieldOfView, true, camera.near, camera.far );
 				cameraR.projectionMatrix = fovToProjection( eyeParamsR.fieldOfView, true, camera.near, camera.far );
-
-				var scale = this.scale;
-				cameraL.translateOnAxis( eyeTranslationL, scale );
-				cameraR.translateOnAxis( eyeTranslationR, scale );
 
 			}
 
@@ -838,6 +873,7 @@ module.exports = function ( renderer, onError ) {
 
 			} else {
 
+				renderer.setViewport( 0, 0, size.width, size.height );
 				renderer.setScissorTest( false );
 
 			}
@@ -864,43 +900,13 @@ module.exports = function ( renderer, onError ) {
 
 	};
 
+	this.dispose = function() {
+
+		window.removeEventListener( 'vrdisplaypresentchange', onVRDisplayPresentChange, false );
+
+	};
+
 	//
-
-	var poseOrientation = new THREE.Quaternion();
-	var posePosition = new THREE.Vector3();
-
-	function getHeadToEyeMatrices( frameData ) {
-
-		// Compute the matrix for the position of the head based on the pose
-		if ( frameData.pose.orientation ) {
-
-			poseOrientation.fromArray( frameData.pose.orientation );
-			headMatrix.makeRotationFromQuaternion( poseOrientation );
-
-		}	else {
-
-			headMatrix.identity();
-
-		}
-
-		if ( frameData.pose.position ) {
-
-			posePosition.fromArray( frameData.pose.position );
-			headMatrix.setPosition( posePosition );
-
-		}
-
-		// Take the view matricies and multiply them by the head matrix, which
-		// leaves only the head-to-eye transform.
-		headToEyeMatrixL.fromArray( frameData.leftViewMatrix );
-		headToEyeMatrixL.premultiply( headMatrix );
-		headToEyeMatrixL.getInverse( headToEyeMatrixL );
-
-		headToEyeMatrixR.fromArray( frameData.rightViewMatrix );
-		headToEyeMatrixR.premultiply( headMatrix );
-		headToEyeMatrixR.getInverse( headToEyeMatrixR );
-
-	}
 
 	function fovToNDCScaleOffset( fov ) {
 
