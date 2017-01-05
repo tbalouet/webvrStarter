@@ -217,11 +217,13 @@ var World;
 		if ( navigator.getVRDisplays ) {
 			navigator.getVRDisplays()
 				.then( function ( displays ) {
-					effect.setVRDisplay( displays[ 0 ] );
-					if(controls){
-						controls.setVRDisplay( displays[ 0 ] );
+					if(displays[ 0 ].capabilities.canPresent){
+						effect.setVRDisplay( displays[ 0 ] );
+						if(controls){
+							controls.setVRDisplay( displays[ 0 ] );
+						}
+						effect.requestPresent();
 					}
-					effect.requestPresent();
 				} )
 				.catch( function () {
 					// no displays
