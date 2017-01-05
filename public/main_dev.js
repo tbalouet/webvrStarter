@@ -99,8 +99,7 @@ window.THREE = require("../lib/vendor/three.js");
 
 	if(Glob.isSamsung()){
 		document.getElementById("carmel-button").addEventListener("click", function(){
-			var ocurl = location.href;
-			ocurl = "ovrweb:" + ocurl.replace("http://", "").replace("https://", "");
+			var ocurl = "ovrweb:" + location.href;
 			
 			window.location.href = ocurl;
 		});
