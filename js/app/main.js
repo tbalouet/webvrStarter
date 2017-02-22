@@ -3,16 +3,17 @@ window.THREE = require("../lib/vendor/three.js");
 (function(){
 	"use strict";
 
-	var World = require("../lib/intern/world.js");
-	var THREE = require("../lib/vendor/three.js");
-	var Glob  = require("./globals.js");
+	var World        = require("../lib/intern/world.js");
+	var THREE        = require("../lib/vendor/three.js");
+	var Glob         = require("./globals.js");
+	var TextBitmap   = require("../lib/vendor/text-bitmap.js");
+	var AssetManager = require("../lib/intern/assetManager.js");
 
 	GLOBAL.env = (location.href.indexOf("3000") !== -1 || location.href.indexOf("debug=true") !== -1 ? "dev" : "prod");
 
 	if(Glob.isSamsung()){
 		document.getElementById("carmel-button").addEventListener("click", function(){
-			var ocurl = "ovrweb:" + location.href;
-			
+			var ocurl = "ovrweb:" + location.href			
 			window.location.href = ocurl;
 		});
 		document.getElementById("carmel-button").style.display = "block";
@@ -27,6 +28,24 @@ window.THREE = require("../lib/vendor/three.js");
 	world.getRenderer().domElement.className = "mainCanvas";
 	world.getRenderer().domElement.id        = "mainCanvas";
 	GLOBAL.world = world;
+
+	AssetManager.getInstance().loadAsset("/public/assets/roboto-bold.json", AssetManager.TYPES.JSONDATA, function(font){
+		var bmtext = new TextBitmap({
+	      imagePath: '/public/assets/roboto-bold.png',
+	      text: 'Grumpy wizards make toxic brew for the evil Queen and Jack.',
+	      width: 1000,
+	      align: 'center',
+	      font: font,
+	      lineHeight: 72,
+	      letterSpacing: 1,
+	      scale: 0.0004,
+	      rotate: false,
+	      color: "#ccc",
+	      showHitBox: true // for debugging
+	    });
+	}, false, {}, function(error){
+		console.log("Error on loading Roboto JSON", error);
+	});
 
 	// Add a repeating grid as a skybox.
 	var boxWidth = 5;

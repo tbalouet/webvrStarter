@@ -58,19 +58,11 @@ var World;
 		// Create a VR manager helper to enter and exit VR mode.
 		var manager       = new WebVRManager(renderer, effect);
 
-		if ( navigator.getVRDisplays ) {
-			navigator.getVRDisplays()
-				.then( function ( displays ) {
-					effect.setVRDisplay( displays[ 0 ] );
-					if(controls){
-						controls.setVRDisplay( displays[ 0 ] );
-					}
-					effect.requestPresent();
-				} )
-				.catch( function () {
-					// no displays
-				} );
-		}
+		navigator.getVRDisplays().then(function(displays) {
+			if(displays && displays.length && displays[0].displayName.indexOf("Gear") !== -1){
+				effect.requestPresent();
+			}
+		});
 		
 		var stats;
 		if(GLOBAL.env === "dev"){
