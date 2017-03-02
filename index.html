@@ -18,9 +18,21 @@
 				padding          : 0;
 				overflow         : hidden;
 			}
+			#carmel-button{
+				background-image : url("public/assets/oculus_logo.jpg");
+				display          : none;
+				padding          : 12px;
+				position         : absolute;
+				right            : 100px;
+				bottom           : 0;
+				width            : 24px;
+				height           : 24px;
+			}
 		</style>
 	</head>
 	<body>
-		<script src="public/main_dev.js"></script>
+		<span id="carmel-button" title="Toggle VR Mode">
+		</span>
+		<script src=<%= mainFile %>></script>
 	</body>
 </html>
