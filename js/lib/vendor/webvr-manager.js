@@ -429,7 +429,7 @@ WebVRManager.prototype.getDeviceByType_ = function(type) {
     navigator.getVRDisplays().then(function(displays) {
       // Promise succeeds, but check if there are any displays actually.
       for (var i = 0; i < displays.length; i++) {
-        if (displays[i] && displays[i].capabilities.canPresent) {
+        if (displays[i] && (displays[i].capabilities.canPresent || (displays.length === 1 && displays[i].isPolyfilled))) {
           resolve(displays[i]);
           break;
         }
