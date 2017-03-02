@@ -3,17 +3,35 @@ var Glob = {};
 (function(){
   "use strict";
 
-	var THREE    = require("../lib/vendor/three.js");
-	
-	Glob.ZERO2   = new THREE.Vector2(0,0);
-	Glob.ZERO3   = new THREE.Vector3(0,0,0);
-	Glob.X_AXIS  = new THREE.Vector3(1, 0, 0);
-	Glob.XN_AXIS = new THREE.Vector3(-1, 0, 0);
-	Glob.Y_AXIS  = new THREE.Vector3(0, 1, 0);
-	Glob.YN_AXIS = new THREE.Vector3(0, -1, 0);
-	Glob.Z_AXIS  = new THREE.Vector3(0, 0, 1);
-	Glob.ZN_AXIS = new THREE.Vector3(0, 0, -1);
+  var THREE    = require("../lib/vendor/three.js");
+  
+  Glob.ZERO2   = new THREE.Vector2(0,0);
+  Glob.ZERO3   = new THREE.Vector3(0,0,0);
+  Glob.X_AXIS  = new THREE.Vector3(1, 0, 0);
+  Glob.XN_AXIS = new THREE.Vector3(-1, 0, 0);
+  Glob.Y_AXIS  = new THREE.Vector3(0, 1, 0);
+  Glob.YN_AXIS = new THREE.Vector3(0, -1, 0);
+  Glob.Z_AXIS  = new THREE.Vector3(0, 0, 1);
+  Glob.ZN_AXIS = new THREE.Vector3(0, 0, -1);
         
+
+  /**===========================
+   * UTILS
+   ===========================*/
+
+  Glob.base64 = function(mimeType, base64) {
+    return 'data:' + mimeType + ';base64,' + base64;
+  };
+
+  Glob.guid = function(){
+    function s4() {
+      return Math.floor((1 + Math.random()) * 0x10000)
+        .toString(16)
+        .substring(1);
+    }
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+  }
   /**
   * @method JsHelper#idDefined
   * @description  Check if a variable is defined
@@ -27,26 +45,141 @@ var Glob = {};
     return true;
   };
 
+  /**
+   * Check is timeout exists and if so clears it
+   * @param  {[type]} timeout [description]
+   * @return {[type]}         [description]
+   */
+  Glob.clearTimeout = function(timeout){
+    if(timeout !== undefined){
+      clearTimeout(timeout);
+      timeout = undefined;
+    }
+  };
+
+  Glob.sendMsgCon = function(msg){
+    var http   = new XMLHttpRequest();
+    var url    = "/msgCon";
+    var params = "msgcon=" + msg;
+    http.open("POST", url, true);
+
+    //Send the proper header information along with the request
+    http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+    http.send(params);
+  };
+
+  Glob.netConsole = function(){
+    console.log     = this.sendMsgCon;
+    console.warning = this.sendMsgCon;
+    console.error   = this.sendMsgCon;
+  };
+
+  /**===========================
+   * SINGLETON
+   ===========================*/
+
+  /**
+  * @method JsHelper#getSingleton
+  * @description Return the singleton instance of a class
+  * @param  {Object} [obj] The instance class needed
+  * @return {Object}       Instance of the class
+  */
+  Glob.getSingleton = function(obj){
+    if(!Glob.isDefined(obj.instance)){
+          obj.instance = false;
+          obj.instance = new obj();
+      }
+      return obj.instance;
+  };
+      
+  /**
+  * @method JsHelper#extendSingleton
+  * @description  Extend a class to singleton
+  * @param  {Object} [obj] Class instance to extend
+  */
+  Glob.extendSingleton = function(obj){
+      if((Glob.isDefined(obj.instance) && obj.instance !== false) || !Glob.isDefined(obj.instance)){
+          throw new Error("This class cannot be instanciated directly");
+      }
+  };
+
+  Glob.getCors = function(src){
+    if(src.indexOf("localhost") !== -1 && window.location.host.indexOf("localhost") === -1){
+      src = src.replace("localhost", "192.168.20.79");
+    }
+    return (src.indexOf(window.location.host) !== -1 ? src : "http://ec2-54-246-145-118.eu-west-1.compute.amazonaws.com:8080/" + src);
+  };
+
+  /**===========================
+   * MANAGE AVAILABILITY AND DEVICE RESTRICTIONS
+   ===========================*/
+
+  Glob.canPlayMP4 = function(){
+    return document.createElement('video').canPlayType('video/mp4') !== "";
+  };
+
   Glob.isMobile = function() {
     var check = false;
     (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
     return check;
   };
 
-  Glob.guid = function(){
-    function s4() {
-      return Math.floor((1 + Math.random()) * 0x10000)
-        .toString(16)
-        .substring(1);
-    }
-    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    s4() + '-' + s4() + s4() + s4();
-  }
-
   Glob.isSamsung = function(){
     return /SAMSUNG|SM-/.test(navigator.userAgent);
   };
 
+  Glob.isIOS = function(){
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  };
+
+  Glob.isDesktop = function(){
+    return !this.isMobile() && GLOBAL.world.getManager().mode <= 1;
+  };
+
+  Glob.isFirefox = function() {
+    return /firefox/i.test(navigator.userAgent);
+  };
+
+  Glob.isIFrame = function() {
+    try {
+      return window.self !== window.top;
+    } catch (e) {
+      return true;
+    }
+  };
+
+  Glob.copyObject = function(objSource, objDest){
+    for(var key in objSource){
+      if(objSource.hasOwnProperty(key)){
+        objDest[key] = objSource[key];
+      }
+    }
+  };
+
+  /**
+  * @method THREE.Quaternion#fixToAxis
+  * @description Fix the rotation of a quaternion to a single axis
+  * @param  {THREE.Vector3} [axis] The axis we want to rationalize to
+  */
+  THREE.Quaternion.prototype.fixToAxis = function(axis){
+    //Set values to 0 if need be
+    this._x *= axis.x;
+    this._y *= axis.y;
+    this._z *= axis.z;
+
+    var mag = Math.sqrt(this._w * this._w + this._x * this._x * axis.x + this._y * this._y * axis.y + this._z * this._z * axis.z);
+    this._w /= mag;
+    if(axis.x !== 0){
+      this._x /= mag;
+    }
+    if(axis.y !== 0){
+      this._y /= mag;
+    }
+    if(axis.z !== 0){
+      this._z /= mag;
+    }
+  }
   /*
    * Debug parameters.
    */
@@ -85,26 +218,21 @@ var Glob = {};
 })()
 
 module.exports = Glob;
-},{"../lib/vendor/three.js":7}],2:[function(require,module,exports){
+},{"../lib/vendor/three.js":9}],2:[function(require,module,exports){
 window.GLOBAL = {};
 window.THREE = require("../lib/vendor/three.js");
 (function(){
 	"use strict";
 
-	var World = require("../lib/intern/world.js");
-	var THREE = require("../lib/vendor/three.js");
-	var Glob  = require("./globals.js");
+	var World       = require("../lib/intern/world.js");
+	var THREE       = require("../lib/vendor/three.js");
+	var Glob        = require("./globals.js");
+	var SceneSample = require("./sceneSample.js");
+	var GamepadState = require("../lib/vendor/GamepadState.js");
 
 	GLOBAL.env = (location.href.indexOf("3000") !== -1 || location.href.indexOf("debug=true") !== -1 ? "dev" : "prod");
 
-	if(Glob.isSamsung()){
-		document.getElementById("carmel-button").addEventListener("click", function(){
-			var ocurl = "ovrweb:" + location.href;
-			
-			window.location.href = ocurl;
-		});
-		document.getElementById("carmel-button").style.display = "block";
-	}
+	GLOBAL.Glob = Glob;
 
 	var world            = new World({
 		color : 0x999999,
@@ -116,44 +244,85 @@ window.THREE = require("../lib/vendor/three.js");
 	world.getRenderer().domElement.id        = "mainCanvas";
 	GLOBAL.world = world;
 
-	// Add a repeating grid as a skybox.
-	var boxWidth = 5;
-	var loader   = new THREE.TextureLoader();
-	loader.load('public/assets/box.png', onTextureLoaded);
-	function onTextureLoaded(texture) {
+	new SceneSample();
+
+	if(Glob.isSamsung()){
+		document.getElementById("carmel-button").addEventListener("click", function(){
+			var ocurl = "ovrweb:" + location.href;
+			
+			window.location.href = ocurl;
+		});
+		document.getElementById("carmel-button").style.display = "block";
+
+		// See GamepadState.js, this is a simple wrapper around the navigator.getGamepads API with Gear VR input detection
+	    var gamepadState = new GamepadState();
+	    // When the gamepadState is updated it will use this callback to trigger any detected Gear VR actions
+	    gamepadState.ongearvrinput = function (gearVRAction) {
+	    	console.log("Gear VR Action:  " + gearVRAction);
+	    };
+		GLOBAL.world.hookOnPreRender(gamepadState.update.bind(gamepadState));
+	}
+
+	// Kick off animation loop
+	world.start();
+})();
+},{"../lib/intern/world.js":4,"../lib/vendor/GamepadState.js":5,"../lib/vendor/three.js":9,"./globals.js":1,"./sceneSample.js":3}],3:[function(require,module,exports){
+var SceneSample;
+
+(function(){
+	"use strict";
+	var THREE = require("../lib/vendor/three.js");
+
+	SceneSample = function(){
+		// Add a repeating grid as a skybox.
+		this.boxWidth = 5;
+		this.createBackground();
+
+		// Create 3D object.
+		this.cubeSize = 0.5;
+		this.createCube();
+
+		GLOBAL.world.hookOnPreRender(this.update.bind(this));
+	};
+
+	SceneSample.prototype.createBackground = function(){
+		var loader   = new THREE.TextureLoader();
+		loader.load('public/assets/box.png', this.onBgTexLoaded.bind(this));
+	};
+
+	SceneSample.prototype.onBgTexLoaded = function(texture){
 		texture.wrapS = THREE.RepeatWrapping;
 		texture.wrapT = THREE.RepeatWrapping;
-		texture.repeat.set(boxWidth, boxWidth);
-		var geometry = new THREE.BoxGeometry(boxWidth, boxWidth, boxWidth);
+		texture.repeat.set(this.boxWidth, this.boxWidth);
+		var geometry = new THREE.BoxGeometry(this.boxWidth, this.boxWidth, this.boxWidth);
 		var material = new THREE.MeshBasicMaterial({
 			map   : texture,
 			color : 0x01BE00,
 			side  : THREE.BackSide
 		});
-		var skybox = new THREE.Mesh(geometry, material);
-		world.getScene().add(skybox);
-	}
 
-	// Create 3D objects.
-	var geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-	var material = new THREE.MeshNormalMaterial();
-	var cube     = new THREE.Mesh(geometry, material);
+		this.skybox = new THREE.Mesh(geometry, material);
+		GLOBAL.world.getScene().add(this.skybox);
+	};
 
-	// Position cube mesh
-	cube.position.z = -1;
+	SceneSample.prototype.createCube = function(){		var geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+		var material = new THREE.MeshNormalMaterial();
+		this.cube     = new THREE.Mesh(geometry, material);
 
-	// Add cube mesh to your three.js scene
-	world.getScene().add(cube);
+		// Position cube mesh
+		this.cube.position.z = -1;
 
-	world.hookOnPreRender(function(){
+		// Add cube mesh to your three.js scene
+		GLOBAL.world.getScene().add(this.cube);
+	};
+
+	SceneSample.prototype.update = function(delta){
 		// Apply rotation to cube mesh
-		cube.rotation.y += 0.01;
-	});
-
-	// Kick off animation loop
-	world.start();
+		this.cube.rotation.y += 0.01;
+	};
 })();
-},{"../lib/intern/world.js":3,"../lib/vendor/three.js":7,"./globals.js":1}],3:[function(require,module,exports){
+module.exports = SceneSample;
+},{"../lib/vendor/three.js":9}],4:[function(require,module,exports){
 var World;
 
 (function(){
@@ -214,19 +383,11 @@ var World;
 		// Create a VR manager helper to enter and exit VR mode.
 		var manager       = new WebVRManager(renderer, effect);
 
-		if ( navigator.getVRDisplays ) {
-			navigator.getVRDisplays()
-				.then( function ( displays ) {
-					effect.setVRDisplay( displays[ 0 ] );
-					if(controls){
-						controls.setVRDisplay( displays[ 0 ] );
-					}
-					effect.requestPresent();
-				} )
-				.catch( function () {
-					// no displays
-				} );
-		}
+		navigator.getVRDisplays().then(function(displays) {
+			if(displays && displays.length && displays[0].displayName.indexOf("Gear") !== -1){
+				effect.requestPresent();
+			}
+		});
 		
 		var stats;
 		if(GLOBAL.env === "dev"){
@@ -324,7 +485,93 @@ var World;
 	};
 })();
 module.exports = World;
-},{"../../app/globals.js":1,"../vendor/VRControls.js":4,"../vendor/VREffect.js":5,"../vendor/stats.js":6,"../vendor/three.js":7,"../vendor/webvr-manager.js":8,"../vendor/webvr-polyfill.js":9}],4:[function(require,module,exports){
+},{"../../app/globals.js":1,"../vendor/VRControls.js":6,"../vendor/VREffect.js":7,"../vendor/stats.js":8,"../vendor/three.js":9,"../vendor/webvr-manager.js":10,"../vendor/webvr-polyfill.js":11}],5:[function(require,module,exports){
+var GamepadState;
+// Copyright 2016-present, Oculus VR, LLC.
+// All rights reserved.
+//
+// This source code is licensed under the license found in the
+// LICENSE-examples file in the root directory of this source tree.
+(function (exports, navigator) {
+  // GamepadState uses navigator.getGamepads to maintain the combined button and axis state of all gamepads.
+  // It also translates Gear VR specific buttons into semantic events for tapping and swiping.
+  GamepadState = function () {
+      this.pressedButtons = {};  // The pressed state of the buttons exposed by any active gamepad
+      this.oldPressedButtons = {};  // The previous pressed state of the buttons exposed by any active gamepad
+      this.gearVRButtons = {};   // The pressed state of the buttons for the Gear VR device specifically
+      this.axes = {};            // The values of the axes exposed by any active gamepad
+      this.gearVRAxes = {};      // The values of the axes for the Gear VR device specifically
+      this.oldGearVRAxes = {};
+      this.ongearvrinput = null; // A callback that is called when Gear VR button events are detected, as they would appear in the Carmel browser
+  };
+
+  // This should be called once per frame.
+  GamepadState.prototype.update = function () {
+    var self = this;
+
+    // Check all gamepads every frame, and record button and axis information
+    Array.prototype.forEach.call(navigator.getGamepads(), function (activePad, padIndex) {
+      if (activePad && activePad.connected) {
+
+        var isGearVRDevice = activePad.id.includes("Gear VR");
+
+        // Update pressedButtons which is combined state for all gamepads
+        activePad.buttons.forEach(function (gamepadButton, buttonIndex) {
+          self.oldPressedButtons[buttonIndex] = self.pressedButtons[buttonIndex];
+          self.pressedButtons[buttonIndex] = gamepadButton.pressed;
+
+          // If this is the Gear VR device then track those buttons separately as well
+          if (isGearVRDevice) {
+            self.gearVRButtons[buttonIndex] = gamepadButton.pressed;
+          }
+        });
+
+        // Update axes which is combined state for all gamepads
+        self.axes = {};
+
+        if (isGearVRDevice) {
+          self.oldGearVRAxes = self.gearVRAxes;
+          self.gearVRAxes = {};
+        }
+
+        activePad.axes.forEach(function (axisValue, axisIndex) {
+          self.axes[axisIndex] = axisValue;
+
+          // If this is the Gear VR device then track those axes separately as well
+          if (isGearVRDevice) {
+            self.gearVRAxes[axisIndex] = axisValue;
+          }
+        });
+      }
+    });
+
+    // Raise Gear VR input events based on the state of the gamepad
+    if (!this.oldPressedButtons[0] && this.gearVRButtons[0]) {
+      this._onGearVRInput("tap");
+    }
+    if (!this.oldGearVRAxes[0] && this.gearVRAxes[0] < 0) {
+      this._onGearVRInput("right");
+    }
+    if (!this.oldGearVRAxes[0] && this.gearVRAxes[0] > 0) {
+      this._onGearVRInput("left");
+    }
+    if (!this.oldGearVRAxes[1] && this.gearVRAxes[1] < 0) {
+      this._onGearVRInput("up");
+    }
+    if (!this.oldGearVRAxes[1] && this.gearVRAxes[1] > 0) {
+      this._onGearVRInput("down");
+    }
+  };
+
+  GamepadState.prototype._onGearVRInput = function (direction) {
+    if (this.ongearvrinput) {
+      this.ongearvrinput(direction);
+    }
+  };
+})(window, window.navigator);
+
+module.exports = GamepadState;
+},{}],6:[function(require,module,exports){
 /**
  * @author dmarcos / https://github.com/dmarcos
  * @author mrdoob / http://mrdoob.com
@@ -500,7 +747,7 @@ module.exports = function ( object, onError ) {
 	};
 
 };
-},{"./three":7}],5:[function(require,module,exports){
+},{"./three":9}],7:[function(require,module,exports){
 /**
  * @author dmarcos / https://github.com/dmarcos
  * @author mrdoob / http://mrdoob.com
@@ -980,13 +1227,13 @@ module.exports = function( renderer, onError ) {
 	}
 
 };
-},{"./three":7}],6:[function(require,module,exports){
+},{"./three":9}],8:[function(require,module,exports){
 // stats.js - http://github.com/mrdoob/stats.js
 var Stats=function(){function h(a){c.appendChild(a.dom);return a}function k(a){for(var d=0;d<c.children.length;d++)c.children[d].style.display=d===a?"block":"none";l=a}var l=0,c=document.createElement("div");c.style.cssText="position:fixed;bottom:0;left:0;cursor:pointer;opacity:0.9;z-index:2147483648";c.addEventListener("click",function(a){a.preventDefault();k(++l%c.children.length)},!1);var g=(performance||Date).now(),e=g,a=0,r=h(new Stats.Panel("FPS","#0ff","#002")),f=h(new Stats.Panel("MS","#0f0","#020"));
 if(self.performance&&self.performance.memory)var t=h(new Stats.Panel("MB","#f08","#201"));k(0);return{REVISION:16,dom:c,addPanel:h,showPanel:k,begin:function(){g=(performance||Date).now()},end:function(){a++;var c=(performance||Date).now();f.update(c-g,200);if(c>e+1E3&&(r.update(1E3*a/(c-e),100),e=c,a=0,t)){var d=performance.memory;t.update(d.usedJSHeapSize/1048576,d.jsHeapSizeLimit/1048576)}return c},update:function(){g=this.end()},domElement:c,setMode:k}};
 Stats.Panel=function(h,k,l){var c=Infinity,g=0,e=Math.round,a=e(window.devicePixelRatio||1),r=80*a,f=48*a,t=3*a,u=2*a,d=3*a,m=15*a,n=74*a,p=30*a,q=document.createElement("canvas");q.width=r;q.height=f;q.style.cssText="width:80px;height:48px";var b=q.getContext("2d");b.font="bold "+9*a+"px Helvetica,Arial,sans-serif";b.textBaseline="top";b.fillStyle=l;b.fillRect(0,0,r,f);b.fillStyle=k;b.fillText(h,t,u);b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{dom:q,update:function(f,
 v){c=Math.min(c,f);g=Math.max(g,f);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,r,m);b.fillStyle=k;b.fillText(e(f)+" "+h+" ("+e(c)+"-"+e(g)+")",t,u);b.drawImage(q,d+a,m,n-a,p,d,m,n-a,p);b.fillRect(d+n-a,m,a,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d+n-a,m,a,e((1-f/v)*p))}}};"object"===typeof module&&(module.exports=Stats);
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -42783,7 +43030,7 @@ v){c=Math.min(c,f);g=Math.max(g,f);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,
     Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 (function (global){
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.WebVRManager = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /*
@@ -43361,7 +43608,7 @@ module.exports = WebVRManager;
 },{"./button-manager.js":1,"./emitter.js":2,"./modes.js":3,"./util.js":4}]},{},[5])(5)
 });
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 (function (global){
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.WebVRPolyfill = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 'use strict';
